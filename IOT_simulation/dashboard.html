@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Akıllı Tarım Sistemi — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --card: #1c2128;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+    --text: #e6edf3; --muted: #7d8590; --accent: #3fb950;
+    --blue: #58a6ff; --amber: #f0883e; --red: #f85149;
+    --teal: #39d353; --purple: #bc8cff;
+    --radius: 10px; --radius-lg: 14px;
+    font-family: 'Sora', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface);
+  }
+  .logo {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, #3fb950, #58a6ff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header span { font-size: 12px; color: var(--muted); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+
+  .main { display: grid; grid-template-columns: 260px 1fr; gap: 0; height: calc(100vh - 61px); }
+
+  /* SOL PANEL */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    display: flex; flex-direction: column; gap: 20px;
+    overflow-y: auto;
+  }
+  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 8px; }
+
+  /* Bitki Seçici */
+  .plant-cards { display: flex; flex-direction: column; gap: 8px; }
+  .plant-card {
+    padding: 10px 12px; border-radius: var(--radius);
+    border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .plant-card:hover { border-color: var(--border2); background: rgba(255,255,255,0.03); }
+  .plant-card.active { border-color: var(--accent); background: rgba(63,185,80,0.08); }
+  .plant-icon { font-size: 22px; width: 32px; text-align: center; }
+  .plant-info h3 { font-size: 13px; font-weight: 600; }
+  .plant-info p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .plant-badge {
+    margin-left: auto; font-size: 10px; padding: 2px 7px;
+    border-radius: 20px; font-family: 'JetBrains Mono', monospace;
+  }
+  .badge-green { background: rgba(63,185,80,0.15); color: var(--accent); border: 1px solid rgba(63,185,80,0.3); }
+  .badge-blue  { background: rgba(88,166,255,0.15); color: var(--blue);  border: 1px solid rgba(88,166,255,0.3); }
+  .badge-amber { background: rgba(240,136,62,0.15); color: var(--amber); border: 1px solid rgba(240,136,62,0.3); }
+
+  /* Kontroller */
+  .ctrl-btn {
+    width: 100%; padding: 10px;
+    border-radius: var(--radius); border: 1px solid var(--border);
+    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-sulama {
+    background: rgba(88,166,255,0.1); color: var(--blue); border-color: rgba(88,166,255,0.3);
+  }
+  .btn-sulama:hover { background: rgba(88,166,255,0.2); }
+  .btn-sulama.aktif { background: rgba(240,136,62,0.12); color: var(--amber); border-color: rgba(240,136,62,0.3); }
+  .btn-reset { background: rgba(248,81,73,0.08); color: var(--red); border-color: rgba(248,81,73,0.2); margin-top: 4px; }
+  .btn-reset:hover { background: rgba(248,81,73,0.15); }
+
+  /* Durum Kart */
+  .status-card {
+    background: var(--card); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 12px;
+  }
+  .status-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .status-row:last-child { margin-bottom: 0; }
+  .status-label { font-size: 11px; color: var(--muted); }
+  .status-val { font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .dot-green { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .dot-red   { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .dot-amber { background: var(--amber); }
+
+  /* SAĞ PANEL */
+  .content { padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+
+  /* Metrik Kartlar */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .metric {
+    background: var(--card); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 14px 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .metric-value { font-size: 26px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .metric-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .metric-nem   .metric-value { color: var(--blue); }
+  .metric-sicak .metric-value { color: var(--red); }
+  .metric-isik  .metric-value { color: var(--amber); }
+  .metric-sul   .metric-value { color: var(--accent); }
+
+  /* Grafik Paneli */
+  .chart-panel {
+    background: var(--card); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 16px 20px;
+  }
+  .chart-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .chart-title { font-size: 13px; font-weight: 600; }
+  .chart-sub { font-size: 11px; color: var(--muted); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* Log */
+  .log-panel {
+    background: var(--card); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 16px;
+    max-height: 180px; overflow: hidden;
+  }
+  .log-body { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); display: flex; flex-direction: column-reverse; gap: 3px; overflow-y: auto; max-height: 130px; }
+  .log-entry { display: flex; gap: 10px; }
+  .log-time { color: #444c56; min-width: 70px; }
+  .log-sulama { color: var(--blue); }
+  .log-dur    { color: var(--amber); }
+  .log-yz     { color: var(--purple); }
+  .log-data   { color: var(--muted); }
+
+  /* İstatistik tablosu */
+  .stat-table {
+    background: var(--card); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); padding: 16px 20px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 400; padding: 0 0 10px; }
+  td { padding: 8px 0; border-top: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
+  td:first-child { color: var(--text); font-family: 'Sora', sans-serif; font-size: 13px; }
+
+  /* Nem bar */
+  .nem-bar-wrap { background: rgba(255,255,255,0.05); border-radius: 4px; height: 6px; width: 80px; overflow: hidden; }
+  .nem-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
+
+  /* Sulama animasyonu */
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .sulama-pulse { animation: pulse 1.2s infinite; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌱</div>
+  <div>
+    <h1>Akıllı Tarım Sistemi</h1>
+  </div>
+  <span id="clock">--:--:--</span>
+</header>
+
+<div class="main">
+  <!-- SOL SIDEBAR -->
+  <div class="sidebar">
+    <div>
+      <div class="section-label">Bitki Seçimi</div>
+      <div class="plant-cards">
+        <div class="plant-card active" onclick="bitciSec('marul', this)">
+          <div class="plant-icon">🥬</div>
+          <div class="plant-info">
+            <h3>Marul</h3>
+            <p>Nem: %60–80</p>
+          </div>
+          <span class="plant-badge badge-green">Serin</span>
+        </div>
+        <div class="plant-card" onclick="bitciSec('nane', this)">
+          <div class="plant-icon">🌿</div>
+          <div class="plant-info">
+            <h3>Nane</h3>
+            <p>Nem: %50–70</p>
+          </div>
+          <span class="plant-badge badge-blue">Orta</span>
+        </div>
+        <div class="plant-card" onclick="bitciSec('fesleğen', this)">
+          <div class="plant-icon">🌱</div>
+          <div class="plant-info">
+            <h3>Fesleğen</h3>
+            <p>Nem: %40–65</p>
+          </div>
+          <span class="plant-badge badge-amber">Sıcak</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Manuel Kontrol</div>
+      <button class="ctrl-btn btn-sulama" id="sulBtn" onclick="sulamaToggle()">
+        <span id="sulBtnIcon">💧</span> <span id="sulBtnText">Sulamayı Başlat</span>
+      </button>
+      <button class="ctrl-btn btn-reset" onclick="sifirla()" style="margin-top:8px;">
+        ↺ Simülasyonu Sıfırla
+      </button>
+    </div>
+
+    <div>
+      <div class="section-label">Sistem Durumu</div>
+      <div class="status-card">
+        <div class="status-row">
+          <span class="status-label">MQTT Broker</span>
+          <span class="status-val"><span class="dot dot-green"></span>localhost:1883</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Topic</span>
+          <span class="status-val" id="topicLabel" style="font-size:10px;">tarim_sulama/1/telemetry</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Sulama</span>
+          <span class="status-val" id="sulamaStatus"><span class="dot dot-red"></span>Kapalı</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Veri sayısı</span>
+          <span class="status-val" id="veriSayisi">0</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">YZ Kararı</span>
+          <span class="status-val" id="yzDurum" style="color:var(--purple); font-size:11px;">Bekliyor...</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Bitki Nem Rejimleri</div>
+      <div class="status-card">
+        <div class="status-row">
+          <span class="status-label">🥬 Marul</span>
+          <span class="status-val" style="color:var(--accent)">%60–80</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">🌿 Nane</span>
+          <span class="status-val" style="color:var(--blue)">%50–70</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">🌱 Fesleğen</span>
+          <span class="status-val" style="color:var(--amber)">%40–65</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAĞ İÇERİK -->
+  <div class="content">
+    <!-- Metrik kartlar -->
+    <div class="metrics">
+      <div class="metric metric-nem">
+        <div class="metric-label">Toprak Nemi</div>
+        <div class="metric-value" id="mNem">—</div>
+        <div class="metric-sub" id="mNemSub">%</div>
+      </div>
+      <div class="metric metric-sicak">
+        <div class="metric-label">Sıcaklık</div>
+        <div class="metric-value" id="mSicak">—</div>
+        <div class="metric-sub">°C</div>
+      </div>
+      <div class="metric metric-isik">
+        <div class="metric-label">Işık</div>
+        <div class="metric-value" id="mIsik">—</div>
+        <div class="metric-sub">lüks</div>
+      </div>
+      <div class="metric metric-sul">
+        <div class="metric-label">Sulama Durumu</div>
+        <div class="metric-value" id="mSul" style="font-size:18px;">KAPALI</div>
+        <div class="metric-sub" id="mSulAlt">YZ kontrollü</div>
+      </div>
+    </div>
+
+    <!-- Grafikler -->
+    <div class="charts-grid">
+      <div class="chart-panel">
+        <div class="chart-header">
+          <span class="chart-title">💧 Toprak Nemi</span>
+          <span class="chart-sub" id="nemMinMax">—</span>
+        </div>
+        <div style="position:relative;height:160px;"><canvas id="chartNem" role="img" aria-label="Toprak nemi zaman serisi grafiği"></canvas></div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-header">
+          <span class="chart-title">🌡 Sıcaklık</span>
+          <span class="chart-sub" id="sicakMinMax">—</span>
+        </div>
+        <div style="position:relative;height:160px;"><canvas id="chartSicak" role="img" aria-label="Sıcaklık zaman serisi grafiği"></canvas></div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-header">
+          <span class="chart-title">☀️ Işık</span>
+          <span class="chart-sub" id="isikMinMax">—</span>
+        </div>
+        <div style="position:relative;height:160px;"><canvas id="chartIsik" role="img" aria-label="Işık miktarı zaman serisi grafiği"></canvas></div>
+      </div>
+      <div class="stat-table">
+        <div class="chart-header" style="margin-bottom:10px;">
+          <span class="chart-title">📊 Sensör İstatistikleri</span>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Sensör</th><th>Min</th><th>Max</th><th>Ort</th><th>Var</th><th>Nem %</th></tr>
+          </thead>
+          <tbody id="statBody">
+            <tr><td colspan="6" style="color:var(--muted);text-align:center;">Veri bekleniyor...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-panel">
+      <div class="chart-header" style="margin-bottom:8px;">
+        <span class="chart-title">📋 Sistem Logu</span>
+        <span class="chart-sub" id="logCount">0 kayıt</span>
+      </div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── BİTKİ PROFİLLERİ ────────────────────────────────────────────────────────
+const PROFILLER = {
+  marul:    { nem_min:60, nem_max:80, sicak_min:15, sicak_max:22, isik_min:3000,  isik_max:8000,  sulama_sure:8  },
+  nane:     { nem_min:50, nem_max:70, sicak_min:18, sicak_max:26, isik_min:4000,  isik_max:10000, sulama_sure:6  },
+  'fesleğen':{ nem_min:40, nem_max:65, sicak_min:20, sicak_max:30, isik_min:6000,  isik_max:12000, sulama_sure:5  },
+};
+
+// ── DURUM ────────────────────────────────────────────────────────────────────
+let aktifBitki = 'marul';
+let sulamaAktif = false;
+let toprakNemi = 42;
+let veriSayisi = 0;
+let logSayisi = 0;
+
+const nemDizisi    = [];
+const sicakDizisi  = [];
+const isikDizisi   = [];
+const etiketler    = [];
+const MAX_NOKTA    = 40;
+
+// ── CHART.JS ─────────────────────────────────────────────────────────────────
+const chartOpts = (renk, sinirMin, sinirMax) => ({
+  responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+  plugins: { legend:{ display:false } },
+  scales: {
+    x: { ticks:{ color:'#7d8590', font:{size:9}, maxTicksLimit:6 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+    y: { ticks:{ color:'#7d8590', font:{size:9}, maxTicksLimit:4 }, grid:{ color:'rgba(255,255,255,0.06)' } }
+  },
+  elements: { point:{ radius:0 }, line:{ borderWidth:1.8, tension:0.4 } }
+});
+
+const mkChart = (id, renk) => new Chart(document.getElementById(id), {
+  type: 'line',
+  data: { labels:[], datasets:[{ data:[], borderColor:renk, fill:true, backgroundColor: renk+'18' }] },
+  options: chartOpts(renk)
+});
+
+const cNem   = mkChart('chartNem',   '#58a6ff');
+const cSicak = mkChart('chartSicak', '#f85149');
+const cIsik  = mkChart('chartIsik',  '#f0883e');
+
+function chartGuncelle(chart, data) {
+  chart.data.labels    = etiketler;
+  chart.data.datasets[0].data = data;
+  chart.update('none');
+}
+
+// ── VERİ ÜRETİMİ ─────────────────────────────────────────────────────────────
+function gaus(ort, std) { return ort + std*(Math.random()+Math.random()+Math.random()-1.5); }
+
+function veriUret() {
+  const p = PROFILLER[aktifBitki];
+
+  // Nem simülasyonu
+  if (sulamaAktif) {
+    toprakNemi += gaus(4, 1.5);
+  } else {
+    toprakNemi -= gaus(1.2, 0.6);
+  }
+  toprakNemi = Math.max(10, Math.min(100, toprakNemi));
+
+  const sicak = gaus((p.sicak_min + p.sicak_max)/2, 2);
+  const isik  = gaus((p.isik_min  + p.isik_max)/2,  800);
+
+  return {
+    sensor_id: `tarim_sulama_1`,
+    bitki: aktifBitki,
+    values: {
+      toprak_nemi:  parseFloat(toprakNemi.toFixed(2)),
+      sicaklik:     parseFloat(sicak.toFixed(2)),
+      isik:         parseFloat(isik.toFixed(0)),
+      sulama_aktif: sulamaAktif
+    },
+    timestamp: new Date().toISOString()
+  };
+}
+
+// ── YZ KARAR MOTORU ──────────────────────────────────────────────────────────
+function yzKarar(nem, sicak) {
+  const p = PROFILLER[aktifBitki];
+  let karar = null;
+
+  if (nem < p.nem_min && !sulamaAktif) {
+    karar = { action:'sulama_baslat', sebep:`Nem ${nem.toFixed(1)}% < ${p.nem_min}% (min)` };
+    sulamaAktif = true;
+  } else if (nem >= p.nem_max && sulamaAktif) {
+    karar = { action:'sulama_durdur', sebep:`Nem ${nem.toFixed(1)}% ≥ ${p.nem_max}% (max)` };
+    sulamaAktif = false;
+  } else if (sicak > p.sicak_max + 3 && !sulamaAktif) {
+    karar = { action:'sulama_baslat', sebep:`Yüksek sıcaklık: ${sicak.toFixed(1)}°C` };
+    sulamaAktif = true;
+  }
+
+  if (karar) {
+    const icon = karar.action === 'sulama_baslat' ? '💧' : '⏹';
+    logEkle(`${icon} YZ → ${karar.sebep}`, 'log-yz');
+    document.getElementById('yzDurum').textContent = karar.sebep.slice(0, 28) + '…';
+  }
+
+  return karar;
+}
+
+// ── UI GÜNCELLEMELERİ ────────────────────────────────────────────────────────
+function logEkle(msg, cls) {
+  const now = new Date();
+  const saat = now.toTimeString().slice(0,8);
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `<span class="log-time">${saat}</span><span class="${cls}">${msg}</span>`;
+  document.getElementById('logBody').prepend(div);
+  logSayisi++;
+  document.getElementById('logCount').textContent = `${logSayisi} kayıt`;
+}
+
+function istatHesapla(arr) {
+  if (!arr.length) return { min:0, max:0, ort:0, var:0 };
+  const min = Math.min(...arr), max = Math.max(...arr);
+  const ort = arr.reduce((a,b)=>a+b,0)/arr.length;
+  const varyans = arr.reduce((a,b)=>a+(b-ort)**2,0)/arr.length;
+  return { min, max, ort, var: varyans };
+}
+
+function sulamaUIGuncelle() {
+  const btn = document.getElementById('sulBtn');
+  const mSul = document.getElementById('mSul');
+  const status = document.getElementById('sulamaStatus');
+
+  if (sulamaAktif) {
+    btn.classList.add('aktif');
+    btn.innerHTML = '<span>⏹</span> <span id="sulBtnText">Sulamayı Durdur</span>';
+    mSul.textContent = 'AÇIK';
+    mSul.style.color = 'var(--blue)';
+    mSul.classList.add('sulama-pulse');
+    status.innerHTML = '<span class="dot dot-green"></span>Aktif';
+  } else {
+    btn.classList.remove('aktif');
+    btn.innerHTML = '<span>💧</span> <span id="sulBtnText">Sulamayı Başlat</span>';
+    mSul.textContent = 'KAPALI';
+    mSul.style.color = 'var(--muted)';
+    mSul.classList.remove('sulama-pulse');
+    status.innerHTML = '<span class="dot dot-red"></span>Kapalı';
+  }
+}
+
+function guncelle() {
+  const veri  = veriUret();
+  const v     = veri.values;
+  veriSayisi++;
+
+  // Dizi güncelle
+  const saat = new Date().toTimeString().slice(0,5);
+  if (etiketler.length >= MAX_NOKTA) {
+    etiketler.shift(); nemDizisi.shift(); sicakDizisi.shift(); isikDizisi.shift();
+  }
+  etiketler.push(saat);
+  nemDizisi.push(v.toprak_nemi);
+  sicakDizisi.push(v.sicaklik);
+  isikDizisi.push(v.isik);
+
+  // YZ karar
+  yzKarar(v.toprak_nemi, v.sicaklik);
+
+  // Metrik kartlar
+  document.getElementById('mNem').textContent   = v.toprak_nemi.toFixed(1);
+  document.getElementById('mSicak').textContent = v.sicaklik.toFixed(1);
+  document.getElementById('mIsik').textContent  = Math.round(v.isik);
+  document.getElementById('veriSayisi').textContent = veriSayisi;
+
+  sulamaUIGuncelle();
+
+  // Grafikler
+  chartGuncelle(cNem,   nemDizisi);
+  chartGuncelle(cSicak, sicakDizisi);
+  chartGuncelle(cIsik,  isikDizisi);
+
+  // MinMax alt başlıklar
+  const iN = istatHesapla(nemDizisi);
+  const iS = istatHesapla(sicakDizisi);
+  const iI = istatHesapla(isikDizisi);
+  document.getElementById('nemMinMax').textContent   = `Min:${iN.min.toFixed(1)} Max:${iN.max.toFixed(1)}`;
+  document.getElementById('sicakMinMax').textContent = `Min:${iS.min.toFixed(1)} Max:${iS.max.toFixed(1)}`;
+  document.getElementById('isikMinMax').textContent  = `Min:${Math.round(iI.min)} Max:${Math.round(iI.max)}`;
+
+  // İstatistik tablosu
+  const p = PROFILLER[aktifBitki];
+  const nemPct = Math.round(((v.toprak_nemi - p.nem_min)/(p.nem_max - p.nem_min))*100);
+  const clamp  = Math.max(0, Math.min(100, nemPct));
+  const barCol = nemPct < 0 ? '#f85149' : nemPct > 100 ? '#f0883e' : '#3fb950';
+
+  document.getElementById('statBody').innerHTML = `
+    <tr>
+      <td>💧 Toprak Nemi</td>
+      <td>${iN.min.toFixed(1)}%</td><td>${iN.max.toFixed(1)}%</td>
+      <td>${iN.ort.toFixed(1)}%</td><td>${iN.var.toFixed(1)}</td>
+      <td><div class="nem-bar-wrap"><div class="nem-bar" style="width:${clamp}%;background:${barCol}"></div></div></td>
+    </tr>
+    <tr>
+      <td>🌡 Sıcaklık</td>
+      <td>${iS.min.toFixed(1)}°C</td><td>${iS.max.toFixed(1)}°C</td>
+      <td>${iS.ort.toFixed(1)}°C</td><td>${iS.var.toFixed(1)}</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td>☀️ Işık</td>
+      <td>${Math.round(iI.min)}</td><td>${Math.round(iI.max)}</td>
+      <td>${Math.round(iI.ort)}</td><td>${Math.round(iI.var)}</td>
+      <td>—</td>
+    </tr>
+  `;
+
+  // Log
+  if (veriSayisi % 5 === 0) {
+    logEkle(`Veri#${veriSayisi} | Nem:${v.toprak_nemi.toFixed(1)}% | Sıcak:${v.sicaklik.toFixed(1)}°C | Işık:${Math.round(v.isik)}lx`, 'log-data');
+  }
+}
+
+// ── KONTROLLER ───────────────────────────────────────────────────────────────
+function sulamaToggle() {
+  sulamaAktif = !sulamaAktif;
+  sulamaUIGuncelle();
+  logEkle(sulamaAktif ? '💧 Manuel sulama başlatıldı' : '⏹ Manuel sulama durduruldu', sulamaAktif ? 'log-sulama' : 'log-dur');
+}
+
+function bitciSec(isim, el) {
+  document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  aktifBitki = isim;
+  toprakNemi = Math.random() * 20 + 35;
+  sulamaAktif = false;
+  sulamaUIGuncelle();
+  logEkle(`🌿 Bitki değiştirildi → ${isim}`, 'log-yz');
+  document.getElementById('yzDurum').textContent = 'Yeni bitki analiz ediliyor...';
+}
+
+function sifirla() {
+  nemDizisi.length = 0; sicakDizisi.length = 0; isikDizisi.length = 0; etiketler.length = 0;
+  veriSayisi = 0; logSayisi = 0;
+  toprakNemi = 42;
+  sulamaAktif = false;
+  sulamaUIGuncelle();
+  document.getElementById('logBody').innerHTML = '';
+  document.getElementById('statBody').innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;">Veri bekleniyor...</td></tr>';
+  chartGuncelle(cNem, []); chartGuncelle(cSicak, []); chartGuncelle(cIsik, []);
+  logEkle('↺ Simülasyon sıfırlandı', 'log-data');
+}
+
+// ── SAAT ─────────────────────────────────────────────────────────────────────
+function saatGuncelle() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('tr-TR');
+}
+setInterval(saatGuncelle, 1000);
+saatGuncelle();
+
+// ── BAŞLAT ───────────────────────────────────────────────────────────────────
+logEkle('✅ Sistem başlatıldı — tarim_sulama/1/telemetry', 'log-data');
+setInterval(guncelle, 2000);
+guncelle();
+</script>
+</body>
+</html>
