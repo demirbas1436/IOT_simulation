@@ -23,7 +23,7 @@ PORT     = 1883
 TAKIM_NO = 1
 TOPIC_TELEMETRY = f"tarim_sulama/{TAKIM_NO}/telemetry"
 TOPIC_COMMAND   = f"tarim_sulama/{TAKIM_NO}/command"
-MONGO_URI       = "mongodb+srv://demirbas1436:Muratmurat123.@iot.hfzt942.mongodb.net/?appName=IOT"
+MONGO_URI       = "mongodb+srv://<demirbas1436(kullanici_adi)>:<Muratmurat123.(password)>@iot.hfzt942.mongodb.net/?appName=IOT"
 DB_NAME         = "akilli_tarim"
 
 # ── BİTKİ PROFİLLERİ ─────────────────────────────────────────────────────────
