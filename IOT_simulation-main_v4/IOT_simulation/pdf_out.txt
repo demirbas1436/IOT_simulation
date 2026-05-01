@@ -1,0 +1,43 @@
+BLM-0482 Nesnelerin İnterneti Simülasyon Ödevi 
+ 
+Projeler, 4 kişilik takımlardan oluşacaktır. Değerlendirme rapor üzerinden 
+gerçekleştirilecektir. Raporlar, e-kampüs platformundan toplanacaktır. Takımlar bu evrakta 
+sunulan konulardan birini tercih edecektir. Haberleşmede kullanılacak topic: 
+takim_no/telemetry 
+ 
+Çözüm, 3 aşamadan oluşacaktır: 
+1.​ Simülasyon veri üretici yazılımı: Publisher 
+a.​ Yazılım periyodik olarak veri üretecek ve bu verileri MQTT altyapısını 
+kullanarak belirtilen topic üzerinden paylaşacaktır. 
+2.​ MQTT tabanlı haberleşme altyapısının yerel cihazda kurulması (yerel sunucu) 
+3.​ Analiz ve depolama yazılımı: Subscriber 
+a.​ Yazılım MQTT altyapısını kullanarak belirtilen topic’te dinleme yapacaktır. 
+b.​ Yazılım edindiği verileri veritabanına kaydedecektir. 
+c.​ Tüm sensörler için ayrı birer zaman serisi grafiği hazırlanacaktır. 
+d.​ Veri analizi kapsamında her bir sensör grafiğinin yanında ilgili sensör 
+verilerinin en düşük, en yüksek, ortalama değerleri ile varyans değerleri 
+hesaplanarak gösterilecektir. 
+e.​ Görseldeki tasarım elde edilecektir. Sensör analiz sonuçları alt alta bu 
+tasarımla, tek sayfada sunulacaktır. 
+ 
+ 
+Tüm telemetry verileri JSON formatında iletilecektir. Sensörlerin ölçtüğü ve yapay olarak 
+üretilecek nicelikler şöyledir: 
+●​ Sıcaklık, 
+●​ Nem, 
+●​ Işık Miktarı 
+ 
+Örnek telemetry verisi (JSON formatında): 
+​
+{ 
+"sensor_id": "temp_01", 
+"values": { 
+"sicaklik": 24.5, 
+"nem": 65, 
+"isik": 450 
+}, 
+"unit": "metric", 
+"timestamp": "2026-03-16T10:00:00Z" 
+BLM-0482 Nesnelerin İnterneti Simülasyon Ödevi 
+ 
+} 
