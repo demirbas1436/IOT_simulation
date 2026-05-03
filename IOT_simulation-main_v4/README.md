@@ -3,7 +3,7 @@
 PS > & "C:\Program Files\mosquitto\mosquitto.exe" -c "c:\Users\HP\Desktop\sil16\nesnelerin_interneti\IOT_simulation-main\IOT_simulation-main_v2\IOT_simulation\yerel_mosquitto.conf" -v
 
 
-
+```mermaid
 graph TD
     subgraph "Uç Cihaz Katmanı (Edge Layer)"
         S1[Sensör Simülasyonu] -->|Veri Üretimi| S2[Toprak Nemi & Sıcaklık]
@@ -30,3 +30,4 @@ graph TD
     style S1 fill:#f9f,stroke:#333,stroke-width:2px
     style AI fill:#00ff00,stroke:#333,stroke-width:2px
     style DB fill:#4488ff,stroke:#333,stroke-width:2px
+```
