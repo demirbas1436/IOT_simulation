@@ -4,10 +4,6 @@ PS > & "C:\Program Files\mosquitto\mosquitto.exe" -c "c:\Users\HP\Desktop\sil16\
 
 
 
-
-
-
-
 graph TD
     subgraph "Uç Cihaz Katmanı (Edge Layer)"
         S1[Sensör Simülasyonu] -->|Veri Üretimi| S2[Toprak Nemi & Sıcaklık]
@@ -31,7 +27,6 @@ graph TD
         P_CMD --> B
     end
 
-    %% Görsel Özelleştirmeler
     style S1 fill:#f9f,stroke:#333,stroke-width:2px
     style AI fill:#00ff00,stroke:#333,stroke-width:2px
     style DB fill:#4488ff,stroke:#333,stroke-width:2px
