@@ -25,6 +25,7 @@ graph TD
         P_CMD --> B
     end
 
+    %% Görsel Özelleştirmeler
     style S1 fill:#f9f,stroke:#333,stroke-width:2px
     style AI fill:#00ff00,stroke:#333,stroke-width:2px
     style DB fill:#4488ff,stroke:#333,stroke-width:2px
